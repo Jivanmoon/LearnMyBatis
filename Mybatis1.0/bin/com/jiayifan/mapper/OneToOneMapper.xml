@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jiayifan.mapper.OneToOneMapper">
+	<!-- 订单信息resultmap -->
+	<resultMap type="com.jiayifan.po.Orders" id="userordermap">
+		<!-- 这里的id，是mybatis在进行一对一查询时将user字段映射为user对象时要使用，必须写 -->
+		<id property="id" column="id"/>
+		<result property="userId" column="user_id"/>
+		<result property="number" column="number"/>
+		<association property="user" javaType="com.jiayifan.po.User">
+			<!-- 这里的id为user的id，如果写上表示给user的id属性赋值 -->
+			<id property="id" column="user_id"/>
+			<result property="username" column="username"/>
+			<result property="address" column="address"/>
+		</association>
+	</resultMap>
+	<select id="findOrdersList" resultType="com.jiayifan.po.OrdersCustom">
+        SELECT
+        orders.*,
+        user.username,
+        user.address
+        FROM
+        orders, user
+        WHERE orders.user_id = user.id 
+	</select>
+	<select id="findOrdersListResultMap" resultMap="userordermap">
+	    SELECT
+	    orders.*,
+	    user.username,
+	    user.address
+	    FROM
+	    orders, user
+	    WHERE orders.user_id = user.id 
+	</select>
+</mapper>

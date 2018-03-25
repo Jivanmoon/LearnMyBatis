@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace命名空间，作用是对sql进行分类化管理
+注意：如果使用mapper代理方法开发，namespace有特殊的作用
+ -->
+<mapper namespace="test">
+    <!-- 在映射文件中配置很多sql语句 -->
+    <!-- 通过select执行查询数据库操作
+    id：标识映射文件中的sql。称为statement的id
+    #{}表示一个占位符
+    parameterType:指定输入参数的类型,这里指定int型，与数据库中类型对应
+    #{id}：其中id表示接收输入的参数，参数名称就是id，如果输入的参数是简单类型
+    #{}中的参数名可以任意。
+    resultType:指定sql输出结果所映射的java对象类型
+     -->
+    <select id="findUserById" parameterType="int"
+     resultType="com.jiayifan.po.User">
+        SELECT * FROM USER WHERE id=#{id}
+    </select>
+    <!-- 
+        根据用户名称模糊查询，可能返回多条记录
+        resultType:不管返回单条还是多条，都是一条记录锁映射的java对象类型
+        ${}:表示拼接sql串，将接受到的参数的内容不加任何修饰的拼接到sql中
+        使用该符号拼接sql语句可能引起sql注入
+        ${value}：接收输入参数的内容，如果传入的参数是简单类型，那么${}中只能使用value
+     -->
+    <select id="findUserByName" parameterType="java.lang.String" resultType="com.jiayifan.po.User">
+        SELECT * FROM USER WHERE username LIKE '%${value}%'
+    </select>
+    <!-- 
+        添加用户
+        parameterType：指定的输入参数类型是pojo（用户信息）
+        #{}中指定pojo的属性名，接收到pojo的属性值
+     -->
+    <insert id="insertUser" parameterType="com.jiayifan.po.User">
+        <!-- 
+            将插入的主键返回，返回到User对象中
+            select last_insert_id():得到刚插入进的记录的主键值，只适用于自增长
+            keyProperty：将查询的主键值设置到parameterType指定对象的那个属性
+            order：select last_insert_id()相对于insert语句来说执行顺序
+            resultType：指定select last_insert_id()的结果类型
+         -->
+        <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+            select last_insert_id()
+        </selectKey>
+        INSERT INTO user(username,birthday,sex,address)VALUE(
+            #{username},#{birthday},#{sex},#{address})
+    </insert>
+    <!-- 删除用户
+        根据id删除用户，需要输入id值
+     -->
+    <delete id="deleteUser" parameterType="java.lang.Integer" >
+        delete from user where id=#{id}
+    </delete>
+    <!-- 
+        更新用户，根据id更新，需要输入用户id，以及更新信息
+     -->
+    <update id="updateUser" parameterType="com.jiayifan.po.User">
+        update user set username=#{username},birthday=#{birthday},sex=#{sex},address=#{address} where id=#{id}
+    </update>
+</mapper>

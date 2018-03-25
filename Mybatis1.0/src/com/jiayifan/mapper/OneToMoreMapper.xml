@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jiayifan.mapper.OneToMoreMapper">
+	<!-- 订单信息resultmap -->
+	<resultMap type="com.jiayifan.po.Orders" id="userorderdetailmap" extends="com.jiayifan.mapper.OneToOneMapper.userordermap">
+		<collection property="orderdetails" ofType="com.jiayifan.po.Orderdetail">
+	    	<id property="id" column="orderdetail_id"/>
+	    	<result property="itemsId" column="items_id"/>
+	    	<result property="itemsNum" column="items_num"/>
+		</collection>
+	</resultMap>
+	<select id="findOrdersDetailList" resultMap="userorderdetailmap">
+	    SELECT 
+		  orders.*,
+		  user.username,
+		  user.address,
+		  orderdetail.id orderdetail_id,
+		  orderdetail.items_id,
+		  orderdetail.items_num
+		FROM
+		  orders,user,orderdetail
+		WHERE orders.user_id = user.id 
+		AND orders.id = orderdetail.orders_id
+	</select>
+
+</mapper>

@@ -1,0 +1,61 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+		http://www.springframework.org/schema/beans/spring-beans-3.2.xsd 
+		http://www.springframework.org/schema/mvc 
+		http://www.springframework.org/schema/mvc/spring-mvc-3.2.xsd 
+		http://www.springframework.org/schema/context 
+		http://www.springframework.org/schema/context/spring-context-3.2.xsd 
+		http://www.springframework.org/schema/aop 
+		http://www.springframework.org/schema/aop/spring-aop-3.2.xsd 
+		http://www.springframework.org/schema/tx 
+		http://www.springframework.org/schema/tx/spring-tx-3.2.xsd ">
+	<!-- 加载配置文件 -->
+	<context:property-placeholder location="classpath:db.properties"/>
+	<!-- 数据库连接池 -->
+	<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+       <property name="driverClassName" value="${jdbc.driver}"/>
+		<property name="url" value="${jdbc.url}"/>
+		<property name="username" value="${jdbc.username}"/>
+		<property name="password" value="${jdbc.password}"/>
+		<property name="maxActive" value="10"/>
+		<property name="maxIdle" value="5"/>
+	</bean>	
+	<!-- mapper配置 -->
+	<!-- 让spring管理sqlsessionfactory 使用mybatis和spring整合包中的 -->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<!-- 加载mybatis的全局配置文件 -->
+		<property name="configLocation" value="mybatis/SqlMapConfig.xml" />
+		
+		<!-- 数据库连接池 -->
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+	<bean id="userDao" class="com.jiayifan.ssm.dao.UserDaoImpl">
+		<property name="sqlSessionFactory" ref="sqlSessionFactory"></property>
+	</bean>
+	<!-- mapper配置
+	MapperFactoryBean：可以根据mapper接口生成代理对象
+	 -->
+	<!-- <bean id="userMapper" class="org.mybatis.spring.mapper.MapperFactoryBean">
+		mapperInterface：指定mapper接口
+		<property name="mapperInterface" value="com.jiayifan.ssm.mapper.UserMapper"></property>
+		<property name="sqlSessionFactory" ref="sqlSessionFactory"></property>
+	</bean> -->
+	<!-- mapper的批量扫描 
+	从mapper的包中扫描出mapper接口，自动的创建代理对象并在
+	spring容器中注册
+	遵循一些规范：需要将mapper接口的类名和mapper.xml映射文件名保持一致
+           且在一个目录中。
+	-->
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<!-- 
+		指定扫描的包名
+		如果扫描多个包，每个包名中间用半角逗号隔开
+		 -->
+		<property name="basePackage" value="com.jiayifan.ssm.mapper"></property>
+	
+		<property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"></property>
+	</bean>
+</beans>

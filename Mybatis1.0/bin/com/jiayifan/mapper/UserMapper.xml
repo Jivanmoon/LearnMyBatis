@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace命名空间，作用是对sql进行分类化管理
+注意：如果使用mapper代理方法开发，namespace有特殊的作用,namespace等于mapper接口地址
+ -->
+<mapper namespace="com.jiayifan.mapper.UserMapper">
+	<!-- 开启本namespace下二级缓存
+		type：指定cache接口的实现类型，Mybatis默认使用PerpetualCache
+		要和ehcache整合，需要配置type为ehcache实现cache接口的类型
+	 -->
+	<cache type="org.mybatis.caches.ehcache.EhcacheCache"/>
+	<!-- 定义一个sql片段
+		id：sql片段唯一标识
+		经验：定义sql片段是基于单表来定义，这样sql片段的可重用性高
+		在sql片段中不要包括where标签
+	 -->
+	<sql id="query_user_where">
+		<if test="userCustom!=null">
+			<if
+				test="userCustom.sex!=null and userCustom.sex!=''">
+				and user.sex=#{userCustom.sex}
+			</if>
+			<if test="userCustom.username!=null and userCustom.username!=''">
+				and user.username='%${userCustom.username}$'
+			</if>
+			<if test="ids!=null">
+				<!-- 使用foreach遍历传入的ids
+					collection：指定输入对象中集合属性
+					item：每次遍历时生成的对象名
+					open：开始遍历时拼接的sql
+					close：结束时遍历时拼接的sql
+					separator：遍历的两个对象的中间需要拼接的sql
+				 -->
+				 <!-- 
+				 	实现   and (id=1 or id=10 or id=16) 的拼接
+				  -->
+				<foreach collection="ids" item="user_id" open="and (" close=")" separator="or">
+				<!-- 每次遍历需要拼接的串 -->
+				id=#{user_id}
+				</foreach>
+			</if>
+		</if>
+	</sql>
+	<!-- 用户信息的综合查询
+		#{userCustom.sex}：取出包装对象中性别的值
+		${userCustom.username}：取出包装对象中的名称
+	 -->
+	<select id="findUserList" parameterType="UserQueryVo" resultType="UserCustom"><!-- 这里使用了别名，在SqlMapConfig中配置 -->
+		select * from user 
+		<!-- 
+			where可以自动的去掉条件中的第一个and
+		 -->
+		<!-- <where>
+			<if test="userCustom!=null">
+				<if
+					test="userCustom.sex!=null and userCustom.sex!=''">
+					and user.sex=#{userCustom.sex}
+				</if>
+				<if test="userCustom.username!=null and userCustom.username!=''">
+					and user.username='%${userCustom.username}$'
+				</if>
+			</if>
+		</where> -->
+		<!-- 引用sql片段，如果该片段不再该文件中，要加namespace -->
+		<where>
+			<include refid="query_user_where"></include>
+		</where>
+	</select>
+	<!-- 使用resultMap进行输出映射 -->
+	<!-- 用户信息的综合查询总数 -->
+	<select id="findUserCount" parameterType="UserQueryVo" resultType="int">
+		select count(*) from user 
+		<!-- 
+			where可以自动的去掉条件中的第一个and
+		 -->
+		<where>
+			<if test="userCustom!=null">
+				<if
+					test="userCustom.sex!=null and userCustom.sex!=''">
+					and user.sex=#{userCustom.sex}
+				</if>
+				<if test="userCustom.username!=null and userCustom.username!=''">
+					and user.username like '%${userCustom.username}%'
+				</if>
+			</if>
+		</where>
+	</select>
+    <!-- 在映射文件中配置很多sql语句 -->
+    <!-- 通过select执行查询数据库操作
+    id：标识映射文件中的sql。称为statement的id
+    #{}表示一个占位符
+    parameterType:指定输入参数的类型,这里指定int型，与数据库中类型对应
+    #{id}：其中id表示接收输入的参数，参数名称就是id，如果输入的参数是简单类型
+    #{}中的参数名可以任意。
+    resultType:指定sql输出结果所映射的java对象类型
+     -->
+    <select id="findUserById" parameterType="int"
+     resultType="com.jiayifan.po.User">
+        SELECT * FROM USER WHERE id=#{id}
+    </select>
+    <!-- 使用resultMap进行输出映射 -->
+    <!-- 定义ResultMap
+    	将SELECT id _id_,username _username_ FROM USER
+    	查询出来的值和User类中的属性做一个映射
+    	type：ResultMap最终映射的java对象类型，可以使用别名
+    	id：对ResultMap的唯一标识
+     -->
+    <resultMap type="user" id="userResultMap">
+    	<!-- id表示查询的结果集中的唯一标识（主键列）
+    		column：指得是查询出来的列名
+    		property：指的是pojo中的属性名
+    		最终ResultMap对column和property做一个映射关系
+    	 -->
+    	<id column="_id_" property="id"/>
+    	<!-- result:对普通列映射定义 -->
+    	<result column="_username_" property="username"/>	
+    </resultMap>
+    <!-- resultMap：指定定义的ResultMap的id，如果这个ResultMap在其他的
+    	mapper文件中，需要在前面加namespace(命名空间)
+     -->
+    <select id="findUserResultMap" parameterType="int"
+    resultMap="userResultMap">
+        SELECT id _id_,username _username_ FROM USER WHERE id=#{id}
+    </select>
+    <!-- 
+        根据用户名称模糊查询，可能返回多条记录
+        resultType:不管返回单条还是多条，都是一条记录锁映射的java对象类型
+        ${}:表示拼接sql串，将接受到的参数的内容不加任何修饰的拼接到sql中
+        使用该符号拼接sql语句可能引起sql注入
+        ${value}：接收输入参数的内容，如果传入的参数是简单类型，那么${}中只能使用value
+     -->
+    <select id="findUserByName" parameterType="java.lang.String" resultType="com.jiayifan.po.User">
+        SELECT * FROM USER WHERE username LIKE '%${value}%'
+    </select>
+    <!-- 
+        添加用户
+        parameterType：指定的输入参数类型是pojo（用户信息）
+        #{}中指定pojo的属性名，接收到pojo的属性值
+     -->
+    <insert id="insertUser" parameterType="User">
+        <!-- 
+            将插入的主键返回，返回到User对象中
+            select last_insert_id():得到刚插入进的记录的主键值，只适用于自增长
+            keyProperty：将查询的主键值设置到parameterType指定对象的那个属性
+            order：select last_insert_id()相对于insert语句来说执行顺序
+            resultType：指定select last_insert_id()的结果类型
+         -->
+        <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+            select last_insert_id()
+        </selectKey>
+        INSERT INTO user(username,birthday,sex,address)VALUE(
+            #{username},#{birthday},#{sex},#{address})
+    </insert>
+    <!-- 删除用户
+        根据id删除用户，需要输入id值
+     -->
+    <delete id="deleteUser" parameterType="java.lang.Integer" >
+        delete from user where id=#{id}
+    </delete>
+    <!-- 
+        更新用户，根据id更新，需要输入用户id，以及更新信息
+     -->
+    <update id="updateUser" parameterType="com.jiayifan.po.User">
+        update user set username=#{username},birthday=#{birthday},sex=#{sex},address=#{address} where id=#{id}
+    </update>
+</mapper>
